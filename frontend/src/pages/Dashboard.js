@@ -5,16 +5,18 @@ import { useSocket } from '../contexts/SocketContext';
 import { 
   Wallet, 
   TrendingUp, 
+  TrendingDown,
   DollarSign, 
   Plus, 
   Minus, 
   Copy, 
-  Clock,
   BarChart3,
-  Zap,
-  Eye,
-  Calendar,
-  Activity
+  Activity,
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+  Zap
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -33,6 +35,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
@@ -40,7 +44,7 @@ const Dashboard = () => {
       setLoading(true);
       const [statsResponse, transactionsResponse] = await Promise.all([
         axios.get('/api/user/dashboard-stats'),
-        axios.get('/api/wallet/transactions', { params: { limit: 10 } })
+        axios.get('/api/wallet/transactions', { params: { limit: 15 } })
       ]);
 
       if (statsResponse.data.success) {
@@ -60,13 +64,13 @@ const Dashboard = () => {
 
   const copyWalletAddress = () => {
     navigator.clipboard.writeText(user.walletAddress);
-    toast.success('Wallet address copied to clipboard!');
+    toast.success('Address copied');
   };
 
   const handleDeposit = async () => {
     const amount = parseFloat(depositAmount);
     if (!amount || amount < 0.01) {
-      toast.error('Please enter a valid amount (minimum $0.01)');
+      toast.error('Minimum deposit $0.01');
       return;
     }
 
@@ -74,14 +78,14 @@ const Dashboard = () => {
       setLoading(true);
       const response = await axios.post('/api/wallet/deposit', {
         amount,
-        description: `Demo deposit of $${amount.toFixed(2)}`
+        description: `Deposit $${amount.toFixed(2)}`
       });
 
       if (response.data.success) {
         setDepositAmount('');
         setShowDepositModal(false);
         fetchDashboardData();
-        toast.success('Deposit successful!');
+        toast.success('Deposit successful');
       }
     } catch (error) {
       console.error('Deposit error:', error);
@@ -94,7 +98,7 @@ const Dashboard = () => {
   const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount);
     if (!amount || amount < 0.01) {
-      toast.error('Please enter a valid amount (minimum $0.01)');
+      toast.error('Minimum withdrawal $0.01');
       return;
     }
 
@@ -107,14 +111,14 @@ const Dashboard = () => {
       setLoading(true);
       const response = await axios.post('/api/wallet/withdraw', {
         amount,
-        description: `Demo withdrawal of $${amount.toFixed(2)}`
+        description: `Withdrawal $${amount.toFixed(2)}`
       });
 
       if (response.data.success) {
         setWithdrawAmount('');
         setShowWithdrawModal(false);
         fetchDashboardData();
-        toast.success('Withdrawal successful!');
+        toast.success('Withdrawal successful');
       }
     } catch (error) {
       console.error('Withdrawal error:', error);
@@ -132,16 +136,25 @@ const Dashboard = () => {
     }).format(amount);
   };
 
+  const formatCompactCurrency = (amount) => {
+    if (amount >= 1000000) {
+      return `$${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `$${(amount / 1000).toFixed(1)}K`;
+    }
+    return formatCurrency(amount);
+  };
+
   const getTransactionIcon = (type) => {
     switch (type) {
       case 'deposit':
-        return <Plus className="h-4 w-4 text-green-600" />;
+        return <ArrowUpRight className="h-3 w-3 text-green-600" />;
       case 'withdrawal':
-        return <Minus className="h-4 w-4 text-red-600" />;
+        return <ArrowDownRight className="h-3 w-3 text-red-600" />;
       case 'interest':
-        return <TrendingUp className="h-4 w-4 text-blue-600" />;
+        return <TrendingUp className="h-3 w-3 text-blue-600" />;
       default:
-        return <Activity className="h-4 w-4 text-gray-600" />;
+        return <Activity className="h-3 w-3 text-gray-600" />;
     }
   };
 
@@ -167,356 +180,336 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {user?.name}!
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Here's an overview of your investment portfolio
-            </p>
-            <div className="flex items-center mt-2">
-              <div className={`w-2 h-2 rounded-full mr-2 ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm text-gray-500">
-                {connected ? 'Real-time updates active' : 'Connection lost'}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Bar */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">Portfolio Dashboard</h1>
+            <div className="flex items-center mt-1 space-x-4">
+              <div className="flex items-center">
+                <div className={`w-2 h-2 rounded-full mr-1.5 ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-xs text-gray-500">
+                  {connected ? 'Live Data' : 'Disconnected'}
+                </span>
+              </div>
+              <div className="text-xs text-gray-500">
+                Last updated: {new Date().toLocaleTimeString()}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={fetchDashboardData}
+              className="header-btn"
+              disabled={loading}
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto p-4">
+        {/* Portfolio Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+          {/* Main Balance Card */}
+          <div className="lg:col-span-2 balance-card p-4 animate-balance">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <Wallet className="h-4 w-4 mr-2" />
+                <span className="text-xs font-medium opacity-90">Portfolio Value</span>
+              </div>
+              <div className="flex items-center text-xs opacity-75">
+                <Zap className="h-3 w-3 mr-1" />
+                Live
+              </div>
+            </div>
+            <div className="text-2xl font-bold mb-1">
+              {formatCurrency(user?.balance || 0)}
+            </div>
+            <div className="flex items-center justify-between text-xs opacity-90">
+              <span>
+                +{formatCurrency(dashboardStats?.avgDailyInterest * 30 || 0)} est. monthly
+              </span>
+              <span>
+                5.2% APY
               </span>
             </div>
-          </motion.div>
+          </div>
+
+          {/* Metrics */}
+          <div className="metric-card">
+            <div className="metric-label">Total Deposits</div>
+            <div className="metric-value text-base">
+              {formatCompactCurrency(dashboardStats?.totalDeposits || 0)}
+            </div>
+            <div className="metric-change-positive">
+              <TrendingUp className="h-3 w-3 inline mr-1" />
+              All time
+            </div>
+          </div>
+
+          <div className="metric-card">
+            <div className="metric-label">Interest Earned</div>
+            <div className="metric-value text-base">
+              {formatCompactCurrency(dashboardStats?.totalInterest || 0)}
+            </div>
+            <div className="metric-change-positive">
+              <TrendingUp className="h-3 w-3 inline mr-1" />
+              +{formatCurrency(dashboardStats?.avgDailyInterest || 0)}/day
+            </div>
+          </div>
+
+          <div className="metric-card">
+            <div className="metric-label">Days Active</div>
+            <div className="metric-value text-base">
+              {dashboardStats?.daysSinceJoining || 0}
+            </div>
+            <div className="text-xs text-gray-500">
+              <Clock className="h-3 w-3 inline mr-1" />
+              Since {new Date(user?.joinedAt).toLocaleDateString()}
+            </div>
+          </div>
         </div>
 
-        {/* Balance Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="balance-card mb-8 animate-balance"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <Wallet className="h-8 w-8 mr-3" />
-              <div>
-                <h2 className="text-2xl font-bold">Portfolio Balance</h2>
-                <p className="text-blue-100">Real-time value</p>
+        <div className="grid lg:grid-cols-4 gap-4">
+          {/* Account Actions */}
+          <div className="lg:col-span-1">
+            <div className="widget mb-4">
+              <div className="widget-header">
+                <h3 className="widget-title">Account Actions</h3>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Zap className="h-5 w-5" />
-              <span className="text-sm">Live</span>
-            </div>
-          </div>
-          
-          <div className="text-5xl font-bold mb-4">
-            {formatCurrency(user?.balance || 0)}
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2 text-green-300" />
-              <span className="text-lg">
-                +{formatCurrency(dashboardStats?.avgDailyInterest * 30 || 0)} estimated monthly
-              </span>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-blue-100">Total Interest Earned</div>
-              <div className="text-xl font-semibold">
-                {formatCurrency(dashboardStats?.totalInterest || 0)}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="stats-card"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Total Deposits</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(dashboardStats?.totalDeposits || 0)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Plus className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="stats-card"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Interest Earned</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(dashboardStats?.totalInterest || 0)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="stats-card"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Days Invested</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {dashboardStats?.daysSinceJoining || 0}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="stats-card"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Daily Average</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(dashboardStats?.avgDailyInterest || 0)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                <BarChart3 className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Wallet Info */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="lg:col-span-1"
-          >
-            <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Wallet Information
-              </h3>
-              
-              <div className="space-y-4">
+              <div className="widget-body space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Wallet Address
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Wallet Address
                   </label>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1 p-3 bg-gray-50 rounded-md border text-sm font-mono">
+                  <div className="flex items-center">
+                    <div className="flex-1 px-2 py-1.5 bg-gray-50 rounded text-xs font-mono border text-gray-700 truncate">
                       {user?.walletAddress}
                     </div>
                     <button
                       onClick={copyWalletAddress}
-                      className="btn-secondary p-3"
-                      title="Copy address"
+                      className="ml-2 p-1.5 text-gray-500 hover:text-gray-700 border rounded"
+                      title="Copy"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-3 w-3" />
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Use this address to transfer funds to your account
-                  </p>
                 </div>
-
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setShowDepositModal(true)}
-                      className="btn-success w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Deposit
-                    </button>
-                    <button
-                      onClick={() => setShowWithdrawModal(true)}
-                      className="btn-secondary w-full"
-                      disabled={!user?.balance || user.balance <= 0}
-                    >
-                      <Minus className="h-4 w-4 mr-2" />
-                      Withdraw
-                    </button>
-                  </div>
+                
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    onClick={() => setShowDepositModal(true)}
+                    className="btn-success btn-large w-full"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Deposit
+                  </button>
+                  <button
+                    onClick={() => setShowWithdrawModal(true)}
+                    className="btn-secondary btn-large w-full"
+                    disabled={!user?.balance || user.balance <= 0}
+                  >
+                    <Minus className="h-3 w-3 mr-1" />
+                    Withdraw
+                  </button>
                 </div>
               </div>
             </div>
-          </motion.div>
 
-          {/* Recent Transactions */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-            className="lg:col-span-2"
-          >
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Recent Transactions
-                </h3>
-                <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                  View All
-                </button>
+            {/* Quick Stats */}
+            <div className="widget">
+              <div className="widget-header">
+                <h3 className="widget-title">Quick Stats</h3>
               </div>
+              <div className="widget-body space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">Today's Interest</span>
+                  <span className="text-xs font-medium text-green-600">
+                    +{formatCurrency(dashboardStats?.avgDailyInterest || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">This Month</span>
+                  <span className="text-xs font-medium text-green-600">
+                    +{formatCurrency((dashboardStats?.avgDailyInterest || 0) * 30)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">Transactions</span>
+                  <span className="text-xs font-medium text-gray-900">
+                    {transactions.length}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">Account Status</span>
+                  <span className="status-indicator-success">
+                    Active
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              <div className="space-y-0 divide-y divide-gray-100">
+          {/* Transaction History */}
+          <div className="lg:col-span-3">
+            <div className="widget">
+              <div className="widget-header">
+                <h3 className="widget-title">Recent Transactions</h3>
+                <button className="header-btn">View All</button>
+              </div>
+              <div className="widget-body p-0">
                 {transactions.length > 0 ? (
-                  transactions.map((transaction, index) => (
-                    <div key={index} className="transaction-item">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-4">
-                          {getTransactionIcon(transaction.type)}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">
-                            {transaction.description}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(transaction.timestamp).toLocaleDateString()} at{' '}
-                            {new Date(transaction.timestamp).toLocaleTimeString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className={`text-right ${getTransactionColor(transaction.type)}`}>
-                        <p className="font-semibold">
-                          {transaction.type === 'withdrawal' ? '-' : '+'}
-                          {formatCurrency(Math.abs(transaction.amount))}
-                        </p>
-                        <p className="text-xs text-gray-500 capitalize">
-                          {transaction.type}
-                        </p>
-                      </div>
-                    </div>
-                  ))
+                  <div className="overflow-hidden">
+                    <table className="professional-table">
+                      <thead>
+                        <tr>
+                          <th>Type</th>
+                          <th>Description</th>
+                          <th>Amount</th>
+                          <th>Date</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transactions.slice(0, 10).map((transaction, index) => (
+                          <tr key={index}>
+                            <td>
+                              <div className="flex items-center">
+                                {getTransactionIcon(transaction.type)}
+                                <span className="ml-2 text-xs font-medium capitalize">
+                                  {transaction.type}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="text-xs text-gray-600 max-w-48 truncate">
+                              {transaction.description}
+                            </td>
+                            <td className={`text-xs font-medium ${getTransactionColor(transaction.type)}`}>
+                              {transaction.type === 'withdrawal' ? '-' : '+'}
+                              {formatCurrency(Math.abs(transaction.amount))}
+                            </td>
+                            <td className="text-xs text-gray-500">
+                              {new Date(transaction.timestamp).toLocaleDateString()} {new Date(transaction.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </td>
+                            <td>
+                              <span className="status-indicator-success">
+                                Complete
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Activity className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500">No transactions yet</p>
-                    <p className="text-sm text-gray-400">
+                  <div className="p-6 text-center">
+                    <Activity className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500 mb-1">No transactions yet</p>
+                    <p className="text-2xs text-gray-400">
                       Make your first deposit to get started
                     </p>
                   </div>
                 )}
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* Deposit Modal */}
+      {/* Modals */}
       {showDepositModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-lg p-6 w-full max-w-md mx-4"
+            className="bg-white rounded border w-full max-w-sm mx-4"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Simulate Deposit
-            </h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Amount (USD)
-              </label>
-              <input
-                type="number"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                className="input"
-                placeholder="0.00"
-                min="0.01"
-                step="0.01"
-              />
+            <div className="card-header">
+              <h3 className="text-sm font-semibold text-gray-900">Simulate Deposit</h3>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowDepositModal(false)}
-                className="btn-secondary flex-1"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeposit}
-                disabled={loading || !depositAmount}
-                className="btn-success flex-1"
-              >
-                {loading ? <LoadingSpinner size="small" /> : 'Deposit'}
-              </button>
+            <div className="card-body">
+              <div className="form-compact">
+                <div className="form-group">
+                  <label>Amount (USD)</label>
+                  <input
+                    type="number"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    className="input input-large"
+                    placeholder="0.00"
+                    min="0.01"
+                    step="0.01"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setShowDepositModal(false)}
+                    className="btn-secondary btn-large flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeposit}
+                    disabled={loading || !depositAmount}
+                    className="btn-success btn-large flex-1"
+                  >
+                    {loading ? <LoadingSpinner size="small" /> : 'Deposit'}
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
       )}
 
-      {/* Withdraw Modal */}
       {showWithdrawModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-lg p-6 w-full max-w-md mx-4"
+            className="bg-white rounded border w-full max-w-sm mx-4"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Simulate Withdrawal
-            </h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Amount (USD)
-              </label>
-              <input
-                type="number"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                className="input"
-                placeholder="0.00"
-                min="0.01"
-                max={user?.balance || 0}
-                step="0.01"
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Available: {formatCurrency(user?.balance || 0)}
-              </p>
+            <div className="card-header">
+              <h3 className="text-sm font-semibold text-gray-900">Simulate Withdrawal</h3>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowWithdrawModal(false)}
-                className="btn-secondary flex-1"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleWithdraw}
-                disabled={loading || !withdrawAmount}
-                className="btn-danger flex-1"
-              >
-                {loading ? <LoadingSpinner size="small" /> : 'Withdraw'}
-              </button>
+            <div className="card-body">
+              <div className="form-compact">
+                <div className="form-group">
+                  <label>Amount (USD)</label>
+                  <input
+                    type="number"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    className="input input-large"
+                    placeholder="0.00"
+                    min="0.01"
+                    max={user?.balance || 0}
+                    step="0.01"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    Available: {formatCurrency(user?.balance || 0)}
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setShowWithdrawModal(false)}
+                    className="btn-secondary btn-large flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleWithdraw}
+                    disabled={loading || !withdrawAmount}
+                    className="btn-danger btn-large flex-1"
+                  >
+                    {loading ? <LoadingSpinner size="small" /> : 'Withdraw'}
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>

@@ -9,7 +9,9 @@ import {
   X, 
   BarChart3,
   Home,
-  UserCircle
+  UserCircle,
+  Settings,
+  HelpCircle
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -27,69 +29,89 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+    <nav className="professional-header sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between h-12">
           {/* Logo and brand */}
           <div className="flex items-center">
             <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2">
-              <div className="p-2 bg-primary-600 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-white" />
+              <div className="p-1 bg-blue-600 rounded">
+                <TrendingUp className="h-4 w-4 text-white" />
               </div>
-              <span className="text-xl font-bold text-gradient">
+              <span className="text-sm font-semibold text-gray-900">
                 BrokerPro
               </span>
             </Link>
           </div>
 
           {/* Desktop navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-1">
             {user ? (
               // Authenticated navigation
               <>
                 <Link
                   to="/dashboard"
-                  className={`flex items-center space-x-1 ${
-                    isActive('/dashboard') ? 'nav-link-active' : 'nav-link-inactive'
+                  className={`flex items-center space-x-1 px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 ${
+                    isActive('/dashboard') 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <BarChart3 className="h-4 w-4" />
+                  <BarChart3 className="h-3 w-3" />
                   <span>Dashboard</span>
                 </Link>
+                
+                {/* Account Balance Display */}
+                <div className="px-3 py-1 bg-gray-100 rounded text-xs font-medium text-gray-700">
+                  ${(user.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
                 
                 {/* User menu */}
                 <div className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
+                    className="flex items-center space-x-1 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors duration-200"
                   >
-                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-white" />
+                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                      <User className="h-3 w-3 text-white" />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-xs font-medium text-gray-700 max-w-20 truncate">
                       {user.name}
                     </span>
                   </button>
 
                   {/* User dropdown menu */}
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded border border-gray-200 shadow-lg py-1 z-50">
+                      <div className="px-3 py-2 border-b border-gray-100">
+                        <div className="text-xs font-medium text-gray-900">{user.name}</div>
+                        <div className="text-2xs text-gray-500">{user.email}</div>
+                      </div>
                       <Link
                         to="/profile"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                       >
-                        <UserCircle className="h-4 w-4 mr-2" />
-                        Profile
+                        <UserCircle className="h-3 w-3 mr-2" />
+                        Account Settings
                       </Link>
-                      <hr className="border-gray-100 my-1" />
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      <Link
+                        to="/help"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                       >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Sign out
-                      </button>
+                        <HelpCircle className="h-3 w-3 mr-2" />
+                        Help & Support
+                      </Link>
+                      <div className="border-t border-gray-100 mt-1 pt-1">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          <LogOut className="h-3 w-3 mr-2" />
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -99,19 +121,23 @@ const Navbar = () => {
               <>
                 <Link
                   to="/"
-                  className={`${isActive('/') ? 'nav-link-active' : 'nav-link-inactive'}`}
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 ${
+                    isActive('/') 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
                 >
                   Home
                 </Link>
                 <Link
                   to="/login"
-                  className="btn-secondary"
+                  className="btn-secondary text-xs"
                 >
-                  Sign in
+                  Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="btn-primary"
+                  className="btn-primary text-xs"
                 >
                   Get Started
                 </Link>
@@ -123,12 +149,12 @@ const Navbar = () => {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              className="p-1 rounded text-gray-400 hover:text-gray-500 hover:bg-gray-100"
             >
               {isMenuOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-4 w-4" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-4 w-4" />
               )}
             </button>
           </div>
@@ -142,34 +168,39 @@ const Navbar = () => {
             {user ? (
               // Authenticated mobile menu
               <>
+                <div className="px-3 py-2 border-b border-gray-100 mb-2">
+                  <div className="text-xs font-medium text-gray-900">{user.name}</div>
+                  <div className="text-2xs text-gray-500">Balance: ${(user.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
                 <Link
                   to="/dashboard"
                   onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md ${
-                    isActive('/dashboard') ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  className={`flex items-center space-x-2 px-3 py-2 rounded text-xs font-medium ${
+                    isActive('/dashboard') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <BarChart3 className="h-5 w-5" />
+                  <BarChart3 className="h-4 w-4" />
                   <span>Dashboard</span>
                 </Link>
                 <Link
                   to="/profile"
                   onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md ${
-                    isActive('/profile') ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  className={`flex items-center space-x-2 px-3 py-2 rounded text-xs font-medium ${
+                    isActive('/profile') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <UserCircle className="h-5 w-5" />
-                  <span>Profile</span>
+                  <UserCircle className="h-4 w-4" />
+                  <span>Account Settings</span>
                 </Link>
-                <hr className="border-gray-200 my-2" />
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 w-full text-left px-3 py-2 rounded-md text-red-600 hover:bg-red-50"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Sign out</span>
-                </button>
+                <div className="border-t border-gray-200 mt-2 pt-2">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 w-full text-left px-3 py-2 rounded text-xs font-medium text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
               </>
             ) : (
               // Guest mobile menu
@@ -177,24 +208,24 @@ const Navbar = () => {
                 <Link
                   to="/"
                   onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md ${
-                    isActive('/') ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  className={`flex items-center space-x-2 px-3 py-2 rounded text-xs font-medium ${
+                    isActive('/') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <Home className="h-5 w-5" />
+                  <Home className="h-4 w-4" />
                   <span>Home</span>
                 </Link>
                 <Link
                   to="/login"
                   onClick={() => setIsMenuOpen(false)}
-                  className="block px-3 py-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  className="block px-3 py-2 rounded text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 >
-                  Sign in
+                  Sign In
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setIsMenuOpen(false)}
-                  className="block px-3 py-2 rounded-md bg-primary-600 text-white hover:bg-primary-700"
+                  className="block px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium"
                 >
                   Get Started
                 </Link>
