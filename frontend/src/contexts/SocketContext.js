@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import { useAuth } from './AuthContext';
 
 const SocketContext = createContext();
 
@@ -15,50 +14,46 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
-  const { user, updateBalance } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      const newSocket = io('http://localhost:5000', {
-        transports: ['websocket'],
-        autoConnect: true,
-      });
+    // Configure socket connection for external access
+    const socketUrl = process.env.NODE_ENV === 'development' 
+      ? window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000'
+        : `${window.location.protocol}//${window.location.hostname}:5000`
+      : window.location.origin;
 
-      newSocket.on('connect', () => {
-        console.log('Connected to server');
-        setConnected(true);
-        // Join user-specific room for real-time updates
-        newSocket.emit('join-user-room', user.id);
-      });
+    const newSocket = io(socketUrl, {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      forceNew: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
 
-      newSocket.on('disconnect', () => {
-        console.log('Disconnected from server');
-        setConnected(false);
-      });
+    newSocket.on('connect', () => {
+      console.log('Socket connected:', newSocket.id);
+      setConnected(true);
+    });
 
-      // Listen for balance updates
-      newSocket.on('balance-update', (data) => {
-        console.log('Received balance update:', data);
-        updateBalance(data.balance, data.transaction || data.interestEarned ? {
-          amount: data.interestEarned,
-          type: 'interest'
-        } : null);
-      });
+    newSocket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      setConnected(false);
+    });
 
-      newSocket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
-        setConnected(false);
-      });
+    newSocket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      setConnected(false);
+    });
 
-      setSocket(newSocket);
+    setSocket(newSocket);
 
-      return () => {
-        newSocket.disconnect();
-        setSocket(null);
-        setConnected(false);
-      };
-    }
-  }, [user, updateBalance]);
+    return () => {
+      newSocket.close();
+    };
+  }, []);
 
   const value = {
     socket,

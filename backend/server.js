@@ -1,63 +1,76 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const http = require('http');
 const socketIo = require('socket.io');
 const cron = require('node-cron');
-
-// Load env vars
-dotenv.config();
-
-// Route files
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const walletRoutes = require('./routes/wallet');
-
-// Import models
 const User = require('./models/User');
 
 const app = express();
 const server = http.createServer(app);
+
+// CORS configuration for external access
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost and codespace URLs
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://0.0.0.0:3000',
+    ];
+    
+    // Allow GitHub Codespaces URLs
+    if (origin.includes('github') || origin.includes('codespaces') || origin.includes('gitpod')) {
+      return callback(null, true);
+    }
+    
+    // Allow preview URLs
+    if (origin.includes('preview.app') || origin.includes('app.github.dev')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for development
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Socket.io configuration for external access
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: function (origin, callback) {
+      callback(null, true); // Allow all origins for development
+    },
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
-// Body parser middleware
+// Middleware
 app.use(express.json());
 
-// CORS middleware
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
-
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-  
-  socket.on('join-user-room', (userId) => {
-    socket.join(`user-${userId}`);
-    console.log(`User ${userId} joined their room`);
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    host: req.get('host')
   });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
-
-// Make io accessible to routes
-app.use((req, res, next) => {
-  req.io = io;
-  next();
 });
 
 // Routes
@@ -65,38 +78,71 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/wallet', walletRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join-room', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined room`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
 });
 
 // Interest calculation cron job (runs every minute for demo purposes)
-cron.schedule('*/1 * * * *', async () => {
+cron.schedule('* * * * *', async () => {
   try {
     const users = await User.find({ balance: { $gt: 0 } });
-    const interestRate = parseFloat(process.env.INTEREST_RATE) || 0.05;
-    
+    const interestRate = parseFloat(process.env.ANNUAL_INTEREST_RATE) / 100;
+    const dailyRate = interestRate / 365;
+    const minuteRate = dailyRate / (24 * 60); // For demo purposes, calculate per minute
+
     for (const user of users) {
-      const minutelyRate = interestRate / (365 * 24 * 60); // Convert annual rate to per-minute
-      const interestAmount = user.balance * minutelyRate;
+      const interest = user.balance * minuteRate;
+      user.balance += interest;
       
-      user.balance += interestAmount;
-      user.lastInterestUpdate = new Date();
+      // Add interest transaction
+      user.transactions.push({
+        type: 'interest',
+        amount: interest,
+        description: `Interest earned: ${(interestRate * 100).toFixed(1)}% APY`,
+        timestamp: new Date()
+      });
+
       await user.save();
-      
-      // Emit real-time balance update
-      io.to(`user-${user._id}`).emit('balance-update', {
-        balance: user.balance,
-        interestEarned: interestAmount
+
+      // Emit real-time update to user
+      io.to(user._id.toString()).emit('balance-update', {
+        newBalance: user.balance,
+        interestEarned: interest,
+        timestamp: new Date()
       });
     }
+
+    console.log(`Interest calculated for ${users.length} users`);
   } catch (error) {
     console.error('Error calculating interest:', error);
   }
 });
 
-const PORT = process.env.PORT || 5000;
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Start server
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
+
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+  console.log(`🌍 External access available`);
+  console.log(`📡 Socket.io server ready for real-time connections`);
+  console.log(`💰 Interest calculation cron job active (every minute)`);
 });
