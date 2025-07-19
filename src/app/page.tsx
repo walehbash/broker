@@ -72,246 +72,287 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-slate-900" data-bs-theme="dark">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="relative px-4 sm:px-6 lg:px-8 pt-20 pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-slate-900 to-amber-900/20"></div>
-        <div className="relative max-w-7xl mx-auto">
-          <div className="text-center">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="text-4xl sm:text-6xl font-bold text-white mb-6"
-            >
-              Professional Cryptocurrency
-              <span className="gradient-text block">Investment Platform</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto"
-            >
-              Join the future of digital finance with OctaTrade's cutting-edge platform. 
-              Secure, intelligent, and designed for serious investors.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-            >
-              <Link href="/auth/register" className="btn-primary flex items-center">
-                Start Trading Now
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-              <Link href="/features" className="btn-secondary">
-                Explore Features
-              </Link>
-            </motion.div>
-
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16"
-            >
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-3xl font-bold text-amber-400">{stat.value}</div>
-                  <div className="text-gray-400 mt-1">{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Why Choose OctaTrade?
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Experience the perfect blend of security, performance, and user experience 
-              in cryptocurrency investment.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
+      {/* Hero Section with Bootstrap Container */}
+      <section className="position-relative px-4 py-5 overflow-hidden">
+        <div className="position-absolute top-0 start-0 w-100 h-100 bg-gradient-to-br from-blue-900/20 via-slate-900 to-amber-900/20"></div>
+        <div className="container-fluid-custom position-relative">
+          <div className="row justify-content-center">
+            <div className="col-12 col-lg-10 text-center">
+              <motion.h1
                 initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="card text-center"
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="display-3 fw-bold text-white mb-4"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-amber-400 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
-                <p className="text-gray-400">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Investment Options */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-800/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Multiple Ways to Fund Your Account
-            </h2>
-            <p className="text-gray-400 text-lg">
-              Choose from various funding methods to start your investment journey
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-              className="card"
-            >
-              <Bitcoin className="w-12 h-12 text-amber-400 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-3">Cryptocurrency Deposits</h3>
-              <p className="text-gray-400 mb-4">
-                Direct crypto transfers to your unique wallet address with real-time balance updates.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center text-sm text-gray-300">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Bitcoin, Ethereum, and 150+ coins
-                </li>
-                <li className="flex items-center text-sm text-gray-300">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Instant confirmations
-                </li>
-              </ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="card"
-            >
-              <DollarSign className="w-12 h-12 text-blue-400 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-3">PayPal Integration</h3>
-              <p className="text-gray-400 mb-4">
-                Quick and secure funding through PayPal for immediate trading access.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center text-sm text-gray-300">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Instant deposits
-                </li>
-                <li className="flex items-center text-sm text-gray-300">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Secure payments
-                </li>
-              </ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="card"
-            >
-              <BarChart3 className="w-12 h-12 text-green-400 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-3">Advanced Trading</h3>
-              <p className="text-gray-400 mb-4">
-                Professional tools and analytics for sophisticated investment strategies.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center text-sm text-gray-300">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Real-time charts
-                </li>
-                <li className="flex items-center text-sm text-gray-300">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Portfolio analytics
-                </li>
-              </ul>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Trusted by Professional Traders
-            </h2>
-            <p className="text-gray-400 text-lg">
-              See what our clients say about their OctaTrade experience
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
+                Professional Cryptocurrency
+                <span className="gradient-text d-block">Investment Platform</span>
+              </motion.h1>
+              
+              <motion.p
                 initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="card"
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="lead text-gray-300 mb-4"
               >
-                <div className="flex items-center mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-amber-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-300 mb-4 italic">"{testimonial.content}"</p>
-                <div>
-                  <div className="font-semibold text-white">{testimonial.name}</div>
-                  <div className="text-sm text-gray-400">{testimonial.role}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+                Join the future of digital finance with OctaTrade's cutting-edge platform. 
+                Secure, intelligent, and designed for serious investors.
+              </motion.p>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-900/20 to-amber-900/20">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <h2 className="text-3xl font-bold text-white mb-6">
-              Ready to Start Your Investment Journey?
-            </h2>
-            <p className="text-xl text-gray-300 mb-8">
-              Join thousands of successful traders who trust OctaTrade with their cryptocurrency investments.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth/register" className="btn-primary flex items-center justify-center">
-                Create Free Account
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-              <Link href="/contact" className="btn-secondary">
-                Contact Our Experts
-              </Link>
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="d-flex flex-column flex-sm-row gap-3 justify-content-center mb-5"
+              >
+                <Link href="/auth/register" className="btn btn-primary btn-lg shadow-glow">
+                  <span className="d-flex align-items-center justify-content-center">
+                    Start Trading Now
+                    <ArrowRight className="ms-2" size={20} />
+                  </span>
+                </Link>
+                <Link href="/features" className="btn btn-outline-warning btn-lg">
+                  Explore Features
+                </Link>
+              </motion.div>
+
+              {/* Stats with Bootstrap Grid */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+                className="row g-4 mt-4"
+              >
+                {stats.map((stat, index) => (
+                  <div key={index} className="col-6 col-md-3">
+                    <div className="text-center">
+                      <div className="display-6 fw-bold text-warning">{stat.value}</div>
+                      <div className="text-muted small">{stat.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
             </div>
-          </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section with Bootstrap Cards */}
+      <section className="py-5">
+        <div className="container-fluid-custom">
+          <div className="row justify-content-center mb-5">
+            <div className="col-12 col-lg-8 text-center">
+              <h2 className="display-5 fw-bold text-white mb-3">
+                Why Choose OctaTrade?
+              </h2>
+              <p className="lead text-muted">
+                Experience the perfect blend of security, performance, and user experience 
+                in cryptocurrency investment.
+              </p>
+            </div>
+          </div>
+
+          <div className="row g-4">
+            {features.map((feature, index) => (
+              <div key={index} className="col-12 col-md-6 col-lg-3">
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="card h-100 border-0 shadow-lg hover-card"
+                >
+                  <div className="card-body text-center p-4">
+                    <div className="d-inline-flex align-items-center justify-content-center bg-gradient-primary rounded-3 mb-3" style={{width: '48px', height: '48px'}}>
+                      <feature.icon className="text-white" size={24} />
+                    </div>
+                    <h5 className="card-title text-white mb-3">{feature.title}</h5>
+                    <p className="card-text text-muted">{feature.description}</p>
+                  </div>
+                </motion.div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Investment Options with Bootstrap Utility Classes */}
+      <section className="py-5 bg-secondary bg-opacity-50">
+        <div className="container-fluid-custom">
+          <div className="row justify-content-center mb-5">
+            <div className="col-12 col-lg-8 text-center">
+              <h2 className="display-5 fw-bold text-white mb-3">
+                Multiple Ways to Fund Your Account
+              </h2>
+              <p className="lead text-muted">
+                Choose from various funding methods to start your investment journey
+              </p>
+            </div>
+          </div>
+
+          <div className="row g-4">
+            <div className="col-12 col-md-6 col-lg-4">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                className="card h-100 border-0 shadow-lg"
+              >
+                <div className="card-body p-4">
+                  <Bitcoin className="text-warning mb-3" size={48} />
+                  <h5 className="card-title text-white mb-3">Cryptocurrency Deposits</h5>
+                  <p className="card-text text-muted mb-4">
+                    Direct crypto transfers to your unique wallet address with real-time balance updates.
+                  </p>
+                  <ul className="list-unstyled">
+                    <li className="d-flex align-items-center text-light mb-2">
+                      <CheckCircle className="text-success me-2" size={16} />
+                      <small>Bitcoin, Ethereum, and 150+ coins</small>
+                    </li>
+                    <li className="d-flex align-items-center text-light mb-2">
+                      <CheckCircle className="text-success me-2" size={16} />
+                      <small>Instant confirmations</small>
+                    </li>
+                  </ul>
+                </div>
+              </motion.div>
+            </div>
+
+            <div className="col-12 col-md-6 col-lg-4">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="card h-100 border-0 shadow-lg"
+              >
+                <div className="card-body p-4">
+                  <DollarSign className="text-info mb-3" size={48} />
+                  <h5 className="card-title text-white mb-3">PayPal Integration</h5>
+                  <p className="card-text text-muted mb-4">
+                    Quick and secure funding through PayPal for immediate trading access.
+                  </p>
+                  <ul className="list-unstyled">
+                    <li className="d-flex align-items-center text-light mb-2">
+                      <CheckCircle className="text-success me-2" size={16} />
+                      <small>Instant deposits</small>
+                    </li>
+                    <li className="d-flex align-items-center text-light mb-2">
+                      <CheckCircle className="text-success me-2" size={16} />
+                      <small>Secure payments</small>
+                    </li>
+                  </ul>
+                </div>
+              </motion.div>
+            </div>
+
+            <div className="col-12 col-md-6 col-lg-4">
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="card h-100 border-0 shadow-lg"
+              >
+                <div className="card-body p-4">
+                  <BarChart3 className="text-success mb-3" size={48} />
+                  <h5 className="card-title text-white mb-3">Advanced Trading</h5>
+                  <p className="card-text text-muted mb-4">
+                    Professional tools and analytics for sophisticated investment strategies.
+                  </p>
+                  <ul className="list-unstyled">
+                    <li className="d-flex align-items-center text-light mb-2">
+                      <CheckCircle className="text-success me-2" size={16} />
+                      <small>Real-time charts</small>
+                    </li>
+                    <li className="d-flex align-items-center text-light mb-2">
+                      <CheckCircle className="text-success me-2" size={16} />
+                      <small>Portfolio analytics</small>
+                    </li>
+                  </ul>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials with Bootstrap Carousel */}
+      <section className="py-5">
+        <div className="container-fluid-custom">
+          <div className="row justify-content-center mb-5">
+            <div className="col-12 col-lg-8 text-center">
+              <h2 className="display-5 fw-bold text-white mb-3">
+                Trusted by Professional Traders
+              </h2>
+              <p className="lead text-muted">
+                See what our clients say about their OctaTrade experience
+              </p>
+            </div>
+          </div>
+
+          <div className="row g-4">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="col-12 col-md-6 col-lg-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="card h-100 border-0 shadow-lg"
+                >
+                  <div className="card-body p-4">
+                    <div className="d-flex mb-3">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <Star key={i} className="text-warning" size={16} fill="currentColor" />
+                      ))}
+                    </div>
+                    <blockquote className="blockquote">
+                      <p className="text-light fst-italic mb-3">"{testimonial.content}"</p>
+                    </blockquote>
+                    <div className="d-flex align-items-center">
+                      <div>
+                        <div className="fw-semibold text-white">{testimonial.name}</div>
+                        <small className="text-muted">{testimonial.role}</small>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section with Bootstrap Alerts */}
+      <section className="py-5 bg-gradient-to-r from-blue-900/20 to-amber-900/20">
+        <div className="container-fluid-custom">
+          <div className="row justify-content-center">
+            <div className="col-12 col-lg-8">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="text-center"
+              >
+                <h2 className="display-5 fw-bold text-white mb-4">
+                  Ready to Start Your Investment Journey?
+                </h2>
+                <p className="lead text-muted mb-4">
+                  Join thousands of successful traders who trust OctaTrade with their cryptocurrency investments.
+                </p>
+                <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                  <Link href="/auth/register" className="btn btn-primary btn-lg shadow-glow">
+                    <span className="d-flex align-items-center justify-content-center">
+                      Create Free Account
+                      <ArrowRight className="ms-2" size={20} />
+                    </span>
+                  </Link>
+                  <Link href="/contact" className="btn btn-outline-warning btn-lg">
+                    Contact Our Experts
+                  </Link>
+                </div>
+              </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
