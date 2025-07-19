@@ -19,11 +19,13 @@ import {
   EyeOff,
   PieChart,
   BarChart3,
-  Activity
+  Activity,
+  Settings
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import PortfolioChart from '@/components/PortfolioChart';
 import PayPalDepositModal from '@/components/PayPalDepositModal';
+import CryptoDepositModal from '@/components/CryptoDepositModal';
 import LiveChat from '@/components/LiveChat';
 
 interface CryptoPrice {
@@ -44,10 +46,11 @@ interface Transaction {
 }
 
 export default function DashboardPage() {
-  const { user, updateBalance } = useAuth();
+  const { user, updateBalance, getPendingDeposits } = useAuth();
   const router = useRouter();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [showPayPalModal, setShowPayPalModal] = useState(false);
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
   const [cryptoPrices, setCryptoPrices] = useState<CryptoPrice[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [portfolioData, setPortfolioData] = useState({
@@ -76,18 +79,20 @@ export default function DashboardPage() {
     ];
     setCryptoPrices(mockPrices);
 
-    // Simulate transaction history
+    // Get pending deposits and add to transactions
+    const pendingDeposits = getPendingDeposits();
     const mockTransactions: Transaction[] = [
-      {
-        id: '1',
-        type: 'deposit',
-        amount: 1000,
+      ...pendingDeposits.map(deposit => ({
+        id: deposit.id,
+        type: 'deposit' as const,
+        amount: deposit.amount,
         currency: 'USD',
-        timestamp: new Date(Date.now() - 86400000),
-        status: 'completed'
-      },
+        timestamp: deposit.timestamp,
+        status: deposit.status === 'confirmed' ? 'completed' as const : 
+                deposit.status === 'rejected' ? 'failed' as const : 'pending' as const
+      })),
       {
-        id: '2',
+        id: 'mock-1',
         type: 'trade',
         amount: 0.02,
         currency: 'BTC',
@@ -109,13 +114,18 @@ export default function DashboardPage() {
         }))
       }));
     }
-  }, [user, router]);
+  }, [user, router, getPendingDeposits]);
 
   const copyWalletAddress = async () => {
     if (user?.walletAddress) {
       await navigator.clipboard.writeText(user.walletAddress);
       // You could add a toast notification here
     }
+  };
+
+  const handleDepositSuccess = () => {
+    // Refresh data after successful deposit
+    window.location.reload();
   };
 
   if (!user) {
@@ -154,29 +164,37 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-slate-900" data-bs-theme="dark">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container-fluid-custom py-4">
         {/* Welcome Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8"
+          className="row align-items-center mb-4"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white">Welcome back, {user.name}!</h1>
-              <p className="text-gray-400 mt-1">Here's your investment portfolio overview</p>
+          <div className="col-12 col-md-8">
+            <h1 className="display-6 fw-bold text-white mb-2">Welcome back, {user.name}!</h1>
+            <p className="text-muted mb-0">Here's your investment portfolio overview</p>
+          </div>
+          <div className="col-12 col-md-4 text-md-end">
+            <div className="d-flex align-items-center justify-content-md-end">
+              <button
+                onClick={() => setBalanceVisible(!balanceVisible)}
+                className="btn btn-outline-secondary btn-sm d-flex align-items-center"
+              >
+                {balanceVisible ? <Eye size={16} className="me-2" /> : <EyeOff size={16} className="me-2" />}
+                {balanceVisible ? 'Hide' : 'Show'} Balance
+              </button>
+              {user.isAdmin && (
+                <a href="/admin" className="btn btn-outline-warning btn-sm ms-2 d-flex align-items-center">
+                  <Settings size={16} className="me-2" />
+                  Admin Panel
+                </a>
+              )}
             </div>
-            <button
-              onClick={() => setBalanceVisible(!balanceVisible)}
-              className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors duration-200"
-            >
-              {balanceVisible ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-              <span>{balanceVisible ? 'Hide' : 'Show'} Balance</span>
-            </button>
           </div>
         </motion.div>
 
@@ -185,223 +203,258 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          className="row g-4 mb-4"
         >
           {stats.map((stat, index) => (
-            <div key={index} className="card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">{stat.title}</p>
-                  <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
-                  <div className="flex items-center mt-2">
-                    {stat.change !== 0 && (
-                      <span className={`text-sm ${stat.change > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {stat.changeText}
-                      </span>
-                    )}
-                    {stat.change === 0 && (
-                      <span className="text-sm text-gray-400">{stat.changeText}</span>
-                    )}
+            <div key={index} className="col-12 col-sm-6 col-lg-3">
+              <div className="card border-0 shadow-lg h-100">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <div>
+                      <h6 className="card-title text-muted mb-1">{stat.title}</h6>
+                      <h4 className="text-white fw-bold mb-2">{stat.value}</h4>
+                      <div className="d-flex align-items-center">
+                        {stat.change !== 0 && (
+                          <span className={`small ${stat.change > 0 ? 'text-success' : 'text-danger'}`}>
+                            {stat.changeText}
+                          </span>
+                        )}
+                        {stat.change === 0 && (
+                          <span className="small text-muted">{stat.changeText}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className={`rounded-circle p-3 ${
+                      stat.change > 0 ? 'bg-success bg-opacity-20' : 
+                      stat.change < 0 ? 'bg-danger bg-opacity-20' : 
+                      'bg-primary bg-opacity-20'
+                    }`}>
+                      <stat.icon className={`${
+                        stat.change > 0 ? 'text-success' : 
+                        stat.change < 0 ? 'text-danger' : 
+                        'text-primary'
+                      }`} size={24} />
+                    </div>
                   </div>
-                </div>
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                  stat.change > 0 ? 'bg-green-500/20' : 
-                  stat.change < 0 ? 'bg-red-500/20' : 
-                  'bg-blue-500/20'
-                }`}>
-                  <stat.icon className={`w-6 h-6 ${
-                    stat.change > 0 ? 'text-green-400' : 
-                    stat.change < 0 ? 'text-red-400' : 
-                    'text-blue-400'
-                  }`} />
                 </div>
               </div>
             </div>
           ))}
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="row g-4">
           {/* Portfolio Chart */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white">Portfolio Performance</h2>
-                <div className="flex items-center space-x-2">
-                  <button className="text-gray-400 hover:text-white transition-colors duration-200">
-                    <RefreshCw className="w-4 h-4" />
+          <div className="col-12 col-lg-8">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="card border-0 shadow-lg"
+            >
+              <div className="card-header bg-transparent border-bottom">
+                <div className="d-flex align-items-center justify-content-between">
+                  <h5 className="card-title text-white mb-0">Portfolio Performance</h5>
+                  <button className="btn btn-sm btn-outline-secondary">
+                    <RefreshCw size={16} />
                   </button>
                 </div>
               </div>
-              <PortfolioChart data={portfolioData} />
-            </div>
-          </motion.div>
+              <div className="card-body">
+                <PortfolioChart data={portfolioData} />
+              </div>
+            </motion.div>
+          </div>
 
           {/* Wallet Info */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="space-y-6"
-          >
-            {/* Wallet Address */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-white mb-4">Your Wallet</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-400">Wallet Address</label>
-                  <div className="flex items-center mt-2 p-3 bg-slate-700 rounded-lg">
-                    <code className="text-sm text-green-400 flex-1 break-all">
-                      {user.walletAddress}
-                    </code>
-                    <button
-                      onClick={copyWalletAddress}
-                      className="ml-2 text-gray-400 hover:text-white transition-colors duration-200"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
+          <div className="col-12 col-lg-4">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="vstack gap-4"
+            >
+              {/* Wallet Address */}
+              <div className="card border-0 shadow-lg">
+                <div className="card-header bg-transparent border-bottom">
+                  <h5 className="card-title text-white mb-0">Your Wallet</h5>
                 </div>
-                <div className="flex space-x-2">
-                  <button 
-                    onClick={() => setShowPayPalModal(true)}
-                    className="btn-primary flex-1 flex items-center justify-center"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Deposit
-                  </button>
-                  <button className="btn-secondary flex-1">
+                <div className="card-body">
+                  <div className="mb-4">
+                    <label className="form-label text-muted small">Wallet Address</label>
+                    <div className="d-flex align-items-center p-3 bg-dark rounded">
+                      <code className="text-success flex-grow-1 small">{user.walletAddress}</code>
+                      <button
+                        onClick={copyWalletAddress}
+                        className="btn btn-sm btn-outline-secondary ms-2"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="row g-2">
+                    <div className="col-6">
+                      <button 
+                        onClick={() => setShowCryptoModal(true)}
+                        className="btn btn-primary w-100 d-flex align-items-center justify-content-center"
+                      >
+                        <Bitcoin size={16} className="me-2" />
+                        Crypto
+                      </button>
+                    </div>
+                    <div className="col-6">
+                      <button 
+                        onClick={() => setShowPayPalModal(true)}
+                        className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center"
+                      >
+                        <DollarSign size={16} className="me-2" />
+                        PayPal
+                      </button>
+                    </div>
+                  </div>
+                  <button className="btn btn-outline-warning w-100 mt-2">
                     Withdraw
                   </button>
                 </div>
               </div>
-            </div>
 
-            {/* Quick Actions */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-3 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors duration-200">
-                  <div className="flex items-center">
-                    <Bitcoin className="w-5 h-5 text-amber-400 mr-3" />
-                    <span className="text-white">Buy Bitcoin</span>
+              {/* Quick Actions */}
+              <div className="card border-0 shadow-lg">
+                <div className="card-header bg-transparent border-bottom">
+                  <h5 className="card-title text-white mb-0">Quick Actions</h5>
+                </div>
+                <div className="card-body">
+                  <div className="vstack gap-3">
+                    <button className="btn btn-outline-light d-flex align-items-center justify-content-between">
+                      <div className="d-flex align-items-center">
+                        <Bitcoin className="text-warning me-3" size={20} />
+                        <span>Buy Bitcoin</span>
+                      </div>
+                      <ArrowUpRight size={16} className="text-muted" />
+                    </button>
+                    <button className="btn btn-outline-light d-flex align-items-center justify-content-between">
+                      <div className="d-flex align-items-center">
+                        <Activity className="text-primary me-3" size={20} />
+                        <span>View Analytics</span>
+                      </div>
+                      <ArrowUpRight size={16} className="text-muted" />
+                    </button>
+                    <button className="btn btn-outline-light d-flex align-items-center justify-content-between">
+                      <div className="d-flex align-items-center">
+                        <DollarSign className="text-success me-3" size={20} />
+                        <span>Set Price Alerts</span>
+                      </div>
+                      <ArrowUpRight size={16} className="text-muted" />
+                    </button>
                   </div>
-                  <ArrowUpRight className="w-4 h-4 text-gray-400" />
-                </button>
-                <button className="w-full flex items-center justify-between p-3 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors duration-200">
-                  <div className="flex items-center">
-                    <Activity className="w-5 h-5 text-blue-400 mr-3" />
-                    <span className="text-white">View Analytics</span>
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-gray-400" />
-                </button>
-                <button className="w-full flex items-center justify-between p-3 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors duration-200">
-                  <div className="flex items-center">
-                    <DollarSign className="w-5 h-5 text-green-400 mr-3" />
-                    <span className="text-white">Set Price Alerts</span>
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-gray-400" />
-                </button>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
 
         {/* Market Overview and Recent Transactions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        <div className="row g-4 mt-1">
           {/* Market Overview */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="card"
-          >
-            <h2 className="text-xl font-semibold text-white mb-6">Market Overview</h2>
-            <div className="space-y-4">
-              {cryptoPrices.map((crypto) => (
-                <div key={crypto.symbol} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-amber-400 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-white font-bold">{crypto.icon}</span>
-                    </div>
-                    <div>
-                      <div className="text-white font-medium">{crypto.name}</div>
-                      <div className="text-gray-400 text-sm">{crypto.symbol}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white font-medium crypto-price">
-                      ${crypto.price.toLocaleString()}
-                    </div>
-                    <div className={`text-sm ${crypto.change24h > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {crypto.change24h > 0 ? '+' : ''}{crypto.change24h.toFixed(2)}%
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Recent Transactions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="card"
-          >
-            <h2 className="text-xl font-semibold text-white mb-6">Recent Transactions</h2>
-            <div className="space-y-4">
-              {transactions.length > 0 ? (
-                transactions.map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                    <div className="flex items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
-                        transaction.type === 'deposit' ? 'bg-green-500/20' :
-                        transaction.type === 'withdrawal' ? 'bg-red-500/20' :
-                        'bg-blue-500/20'
-                      }`}>
-                        {transaction.type === 'deposit' ? (
-                          <ArrowDownLeft className="w-5 h-5 text-green-400" />
-                        ) : transaction.type === 'withdrawal' ? (
-                          <ArrowUpRight className="w-5 h-5 text-red-400" />
-                        ) : (
-                          <TrendingUp className="w-5 h-5 text-blue-400" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-white font-medium capitalize">{transaction.type}</div>
-                        <div className="text-gray-400 text-sm">
-                          {transaction.timestamp.toLocaleDateString()}
+          <div className="col-12 col-lg-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="card border-0 shadow-lg"
+            >
+              <div className="card-header bg-transparent border-bottom">
+                <h5 className="card-title text-white mb-0">Market Overview</h5>
+              </div>
+              <div className="card-body">
+                <div className="vstack gap-3">
+                  {cryptoPrices.map((crypto) => (
+                    <div key={crypto.symbol} className="d-flex align-items-center justify-content-between p-3 bg-dark rounded">
+                      <div className="d-flex align-items-center">
+                        <div className="rounded-circle bg-gradient-primary d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px'}}>
+                          <span className="text-white fw-bold">{crypto.icon}</span>
+                        </div>
+                        <div>
+                          <div className="text-white fw-medium">{crypto.name}</div>
+                          <small className="text-muted">{crypto.symbol}</small>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white font-medium">
-                        {transaction.currency === 'USD' ? '$' : ''}{transaction.amount} {transaction.currency}
-                      </div>
-                      <div className={`text-sm ${
-                        transaction.status === 'completed' ? 'text-green-400' :
-                        transaction.status === 'pending' ? 'text-yellow-400' :
-                        'text-red-400'
-                      }`}>
-                        {transaction.status}
+                      <div className="text-end">
+                        <div className="text-white fw-medium crypto-price">
+                          ${crypto.price.toLocaleString()}
+                        </div>
+                        <small className={`${crypto.change24h > 0 ? 'text-success' : 'text-danger'}`}>
+                          {crypto.change24h > 0 ? '+' : ''}{crypto.change24h.toFixed(2)}%
+                        </small>
                       </div>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <Activity className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-400">No transactions yet</p>
-                  <p className="text-gray-500 text-sm">Start trading to see your transaction history</p>
+                  ))}
                 </div>
-              )}
-            </div>
-          </motion.div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Recent Transactions */}
+          <div className="col-12 col-lg-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="card border-0 shadow-lg"
+            >
+              <div className="card-header bg-transparent border-bottom">
+                <h5 className="card-title text-white mb-0">Recent Transactions</h5>
+              </div>
+              <div className="card-body">
+                {transactions.length > 0 ? (
+                  <div className="vstack gap-3">
+                    {transactions.slice(0, 5).map((transaction) => (
+                      <div key={transaction.id} className="d-flex align-items-center justify-content-between p-3 bg-dark rounded">
+                        <div className="d-flex align-items-center">
+                          <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 ${
+                            transaction.type === 'deposit' ? 'bg-success bg-opacity-20' :
+                            transaction.type === 'withdrawal' ? 'bg-danger bg-opacity-20' :
+                            'bg-primary bg-opacity-20'
+                          }`} style={{width: '40px', height: '40px'}}>
+                            {transaction.type === 'deposit' ? (
+                              <ArrowDownLeft className="text-success" size={20} />
+                            ) : transaction.type === 'withdrawal' ? (
+                              <ArrowUpRight className="text-danger" size={20} />
+                            ) : (
+                              <TrendingUp className="text-primary" size={20} />
+                            )}
+                          </div>
+                          <div>
+                            <div className="text-white fw-medium text-capitalize">{transaction.type}</div>
+                            <small className="text-muted">
+                              {transaction.timestamp.toLocaleDateString()}
+                            </small>
+                          </div>
+                        </div>
+                        <div className="text-end">
+                          <div className="text-white fw-medium">
+                            {transaction.currency === 'USD' ? '$' : ''}{transaction.amount} {transaction.currency}
+                          </div>
+                          <small className={`${
+                            transaction.status === 'completed' ? 'text-success' :
+                            transaction.status === 'pending' ? 'text-warning' :
+                            'text-danger'
+                          }`}>
+                            {transaction.status}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <Activity className="text-muted mb-3" size={48} />
+                    <p className="text-muted mb-1">No transactions yet</p>
+                    <small className="text-muted">Start trading to see your transaction history</small>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
 
@@ -412,7 +465,15 @@ export default function DashboardPage() {
           onSuccess={(amount) => {
             updateBalance(amount);
             setShowPayPalModal(false);
+            handleDepositSuccess();
           }}
+        />
+      )}
+
+      {showCryptoModal && (
+        <CryptoDepositModal
+          onClose={() => setShowCryptoModal(false)}
+          onSuccess={handleDepositSuccess}
         />
       )}
 
